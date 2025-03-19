@@ -4,23 +4,13 @@ import { useWallet } from '@/context/WalletContext';
 import { toast } from '@/components/ui/use-toast';
 import { FormLabel } from '@/components/ui/form';
 import { AccountType, accountTypes, FOUNDER_WALLET } from './types';
-import { User, Shield, Crown, Zap } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 
 interface AccountTypeSelectionProps {
   selectedAccountType: string;
   onChange: (type: string) => void;
   balance: number | null;
 }
-
-const getIconComponent = (iconName: string) => {
-  switch (iconName) {
-    case 'User': return User;
-    case 'Shield': return Shield;
-    case 'Crown': return Crown;
-    case 'Zap': return Zap;
-    default: return User;
-  }
-};
 
 const AccountTypeSelection = ({ selectedAccountType, onChange, balance }: AccountTypeSelectionProps) => {
   const { publicKey } = useWallet();
@@ -57,7 +47,7 @@ const AccountTypeSelection = ({ selectedAccountType, onChange, balance }: Accoun
       <FormLabel>Account Type</FormLabel>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
         {accountTypes.map((account) => {
-          const Icon = getIconComponent(account.icon);
+          const Icon = account.icon;
           const isSelected = selectedAccountType === account.type;
           const isDisabled = 
             (account.type === 'Premium' && (balance === null || balance < account.cost)) || 
