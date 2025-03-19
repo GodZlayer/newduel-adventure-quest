@@ -12,7 +12,6 @@ import {
   DialogFooter 
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Button from './ui-custom/Button';
 import { 
@@ -27,16 +26,16 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Shield, User, Crown, Zap } from "lucide-react";
+import { User, Shield, Crown, Zap, Plus, Minus, List, Check } from "lucide-react";
 
 const characterSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters').max(20, 'Name must be less than 20 characters'),
   bio: z.string().max(200, 'Bio must be less than 200 characters').optional(),
   accountType: z.enum(['Free', 'Premium', 'GameMaster', 'Admin']),
-  physical: z.number().min(0).max(100),
-  agility: z.number().min(0).max(100),
-  energy: z.number().min(0).max(100),
-  resistance: z.number().min(0).max(100)
+  strength: z.number().min(1).max(99),
+  agility: z.number().min(1).max(99),
+  energy: z.number().min(1).max(99),
+  resistance: z.number().min(1).max(99)
 });
 
 type CharacterFormValues = z.infer<typeof characterSchema>;
@@ -52,21 +51,26 @@ const accountTypes = [
     type: 'Premium',
     icon: Shield,
     description: '5 character slots',
-    cost: 100,
+    cost: 1000,
   },
   {
     type: 'GameMaster',
     icon: Crown,
-    description: '6 character slots',
-    cost: 250,
+    description: '6 character slots (Founder only)',
+    cost: 0,
+    restricted: true,
   },
   {
     type: 'Admin',
     icon: Zap,
-    description: '10 character slots',
-    cost: 500,
+    description: '10 character slots (Founder only)',
+    cost: 0,
+    restricted: true,
   },
 ];
+
+// Founder wallet address - in a real app you would fetch this from a secure source
+const FOUNDER_WALLET = "8xMUCYg1fjLZBB2rU9xZW4KCQqrX1Uxz61FeWXKyHnU8";
 
 const CharacterCreation = () => {
   const [open, setOpen] = useState(false);
@@ -74,7 +78,7 @@ const CharacterCreation = () => {
   const { balance, isLoading: isBalanceLoading } = useTokenBalance();
   const [isCreating, setIsCreating] = useState(false);
   const [selectedAccountType, setSelectedAccountType] = useState('Free');
-  const [remainingPoints, setRemainingPoints] = useState(100);
+  const [remainingPoints, setRemainingPoints] = useState(26);
 
   const form = useForm<CharacterFormValues>({
     resolver: zodResolver(characterSchema),
@@ -82,49 +86,66 @@ const CharacterCreation = () => {
       name: '',
       bio: '',
       accountType: 'Free',
-      physical: 25,
-      agility: 25,
-      energy: 25,
-      resistance: 25,
+      strength: 1,
+      agility: 1,
+      energy: 1,
+      resistance: 1,
     },
   });
 
   const watchAttributes = {
-    physical: form.watch('physical'),
+    strength: form.watch('strength'),
     agility: form.watch('agility'),
     energy: form.watch('energy'),
     resistance: form.watch('resistance'),
   };
 
-  // Update remaining points when attributes change
-  const totalPoints = Object.values(watchAttributes).reduce((acc, val) => acc + val, 0);
-  const maxPoints = 100;
+  // Calculate total points used (subtract the base 1 point for each attribute)
+  const usedPoints = Object.values(watchAttributes).reduce((acc, val) => acc + (val - 1), 0);
+  const totalStartingPoints = 26;
+  const remainingPointsCalculated = totalStartingPoints - usedPoints;
 
-  const handleAttributeChange = (attribute: keyof typeof watchAttributes, value: number) => {
-    const currentTotal = totalPoints - watchAttributes[attribute];
-    const newTotal = currentTotal + value;
+  // Update remaining points when attributes change
+  const handleAttributeChange = (attribute: keyof typeof watchAttributes, change: number) => {
+    const currentValue = watchAttributes[attribute];
+    const newValue = currentValue + change;
     
-    if (newTotal <= maxPoints) {
-      form.setValue(attribute, value);
-      setRemainingPoints(maxPoints - newTotal);
-    } else {
+    // Ensure value stays within bounds (min 1, max 99)
+    if (newValue < 1 || newValue > 99) return;
+    
+    // Check if we have enough points for an increase
+    if (change > 0 && remainingPointsCalculated <= 0) {
       toast({
         title: "Cannot increase attribute",
         description: "You've used all available attribute points",
         variant: "destructive",
       });
+      return;
     }
+    
+    form.setValue(attribute, newValue);
+    setRemainingPoints(remainingPointsCalculated - change);
   };
 
   const handleAccountTypeChange = (type: string) => {
-    // Check if user has enough balance for selected account type
     const accountType = accountTypes.find(acct => acct.type === type);
     if (!accountType) return;
     
-    if (balance !== null && balance < accountType.cost && type !== 'Free') {
+    // Check for restricted account types (GameMaster and Admin)
+    if (accountType.restricted && publicKey !== FOUNDER_WALLET) {
+      toast({
+        title: "Restricted Account Type",
+        description: `Only the founder wallet can create a ${type} account.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check if user has enough balance for Premium
+    if (type === 'Premium' && (balance === null || balance < accountType.cost)) {
       toast({
         title: "Insufficient NDC Balance",
-        description: `You need ${accountType.cost} NDC to create a ${type} account.`,
+        description: `You need ${accountType.cost} NDC to create a Premium account.`,
         variant: "destructive",
       });
       return;
@@ -144,14 +165,37 @@ const CharacterCreation = () => {
       return;
     }
 
-    // Check if user has enough balance for selected account type
-    const accountType = accountTypes.find(acct => acct.type === data.accountType);
-    if (!accountType) return;
-
-    if (balance !== null && balance < accountType.cost && data.accountType !== 'Free') {
+    // Check if attributes add up correctly (should equal 4 base points + 26 distributable points)
+    const totalAttributes = data.strength + data.agility + data.energy + data.resistance;
+    if (totalAttributes !== 30) {
       toast({
-        title: "Insufficient NDC Balance",
-        description: `You need ${accountType.cost} NDC to create a ${data.accountType} account.`,
+        title: "Invalid Attributes",
+        description: "Please distribute all available attribute points.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Additional verification for Premium account
+    if (data.accountType === 'Premium') {
+      const accountType = accountTypes.find(acct => acct.type === 'Premium');
+      if (!accountType) return;
+
+      if (balance !== null && balance < accountType.cost) {
+        toast({
+          title: "Insufficient NDC Balance",
+          description: `You need ${accountType.cost} NDC to create a Premium account.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Verification for restricted accounts
+    if ((data.accountType === 'GameMaster' || data.accountType === 'Admin') && publicKey !== FOUNDER_WALLET) {
+      toast({
+        title: "Unauthorized",
+        description: "Only the founder wallet can create this account type.",
         variant: "destructive",
       });
       return;
@@ -220,8 +264,11 @@ const CharacterCreation = () => {
                       <FormItem>
                         <FormLabel>Character Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter character name" {...field} />
+                          <Input placeholder="Enter a unique character name" {...field} />
                         </FormControl>
+                        <FormDescription>
+                          Names must be unique in the game world
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -256,7 +303,9 @@ const CharacterCreation = () => {
                     {accountTypes.map((account) => {
                       const Icon = account.icon;
                       const isSelected = selectedAccountType === account.type;
-                      const isDisabled = balance !== null && balance < account.cost && account.type !== 'Free';
+                      const isDisabled = 
+                        (account.type === 'Premium' && (balance === null || balance < account.cost)) || 
+                        (account.restricted && publicKey !== FOUNDER_WALLET);
                       
                       return (
                         <div
@@ -294,133 +343,220 @@ const CharacterCreation = () => {
               {/* Attributes */}
               <div>
                 <div className="flex justify-between items-center">
-                  <FormLabel>Attributes</FormLabel>
+                  <FormLabel>Character Attributes</FormLabel>
                   <span className="text-sm text-muted-foreground">
-                    Remaining points: <span className={remainingPoints <= 0 ? 'text-destructive' : 'text-game-accent'}>{remainingPoints}</span>
+                    Remaining points: <span className={remainingPointsCalculated < 0 ? 'text-destructive' : 'text-game-accent'}>{Math.max(0, remainingPointsCalculated)}</span>/26
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                  {/* Physical */}
-                  <FormField
-                    control={form.control}
-                    name="physical"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex justify-between items-center">
-                          <FormLabel>Physical</FormLabel>
-                          <span className="text-sm">{field.value}/100</span>
-                        </div>
-                        <div className="relative pt-1">
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={field.value}
-                            onChange={(e) => handleAttributeChange('physical', parseInt(e.target.value))}
-                            className="w-full h-2 bg-muted rounded-md appearance-none cursor-pointer"
-                          />
-                          <div 
-                            className="absolute h-2 bg-game-fire rounded-md top-[0.25rem]"
-                            style={{ width: `${field.value}%` }}
-                          ></div>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
+                <div className="bg-muted/40 p-4 rounded-md mt-2">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Each character starts with 1 point in each attribute and 26 points to distribute. You'll gain 1 additional point to distribute per level (max level: 99).
+                  </p>
                   
-                  {/* Agility */}
-                  <FormField
-                    control={form.control}
-                    name="agility"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex justify-between items-center">
-                          <FormLabel>Agility</FormLabel>
-                          <span className="text-sm">{field.value}/100</span>
-                        </div>
-                        <div className="relative pt-1">
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={field.value}
-                            onChange={(e) => handleAttributeChange('agility', parseInt(e.target.value))}
-                            className="w-full h-2 bg-muted rounded-md appearance-none cursor-pointer"
-                          />
-                          <div 
-                            className="absolute h-2 bg-game-air rounded-md top-[0.25rem]"
-                            style={{ width: `${field.value}%` }}
-                          ></div>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {/* Energy */}
-                  <FormField
-                    control={form.control}
-                    name="energy"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex justify-between items-center">
-                          <FormLabel>Energy</FormLabel>
-                          <span className="text-sm">{field.value}/100</span>
-                        </div>
-                        <div className="relative pt-1">
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={field.value}
-                            onChange={(e) => handleAttributeChange('energy', parseInt(e.target.value))}
-                            className="w-full h-2 bg-muted rounded-md appearance-none cursor-pointer"
-                          />
-                          <div 
-                            className="absolute h-2 bg-game-water rounded-md top-[0.25rem]"
-                            style={{ width: `${field.value}%` }}
-                          ></div>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  {/* Resistance */}
-                  <FormField
-                    control={form.control}
-                    name="resistance"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex justify-between items-center">
-                          <FormLabel>Resistance</FormLabel>
-                          <span className="text-sm">{field.value}/100</span>
-                        </div>
-                        <div className="relative pt-1">
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={field.value}
-                            onChange={(e) => handleAttributeChange('resistance', parseInt(e.target.value))}
-                            className="w-full h-2 bg-muted rounded-md appearance-none cursor-pointer"
-                          />
-                          <div 
-                            className="absolute h-2 bg-game-earth rounded-md top-[0.25rem]"
-                            style={{ width: `${field.value}%` }}
-                          ></div>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* Strength */}
+                    <FormField
+                      control={form.control}
+                      name="strength"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="bg-card border border-border rounded-md p-3">
+                            <div className="flex justify-between items-center">
+                              <FormLabel className="flex items-center text-game-fire">
+                                <div className="w-6 h-6 rounded-full bg-game-fire/20 flex items-center justify-center mr-2">
+                                  <List className="h-3.5 w-3.5 text-game-fire" />
+                                </div>
+                                Strength
+                              </FormLabel>
+                              <div className="flex items-center gap-2">
+                                <button 
+                                  type="button"
+                                  onClick={() => handleAttributeChange('strength', -1)}
+                                  className="w-6 h-6 flex items-center justify-center rounded-full bg-muted hover:bg-muted-foreground/20"
+                                  disabled={watchAttributes.strength <= 1}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </button>
+                                <span className="text-sm font-medium w-8 text-center">{field.value}</span>
+                                <button 
+                                  type="button"
+                                  onClick={() => handleAttributeChange('strength', 1)}
+                                  className="w-6 h-6 flex items-center justify-center rounded-full bg-muted hover:bg-muted-foreground/20"
+                                  disabled={remainingPointsCalculated <= 0}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+                            <FormDescription className="text-xs mt-2">
+                              Determines item equip requirements and melee damage
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {/* Agility */}
+                    <FormField
+                      control={form.control}
+                      name="agility"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="bg-card border border-border rounded-md p-3">
+                            <div className="flex justify-between items-center">
+                              <FormLabel className="flex items-center text-game-air">
+                                <div className="w-6 h-6 rounded-full bg-game-air/20 flex items-center justify-center mr-2">
+                                  <List className="h-3.5 w-3.5 text-game-air" />
+                                </div>
+                                Agility
+                              </FormLabel>
+                              <div className="flex items-center gap-2">
+                                <button 
+                                  type="button"
+                                  onClick={() => handleAttributeChange('agility', -1)}
+                                  className="w-6 h-6 flex items-center justify-center rounded-full bg-muted hover:bg-muted-foreground/20"
+                                  disabled={watchAttributes.agility <= 1}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </button>
+                                <span className="text-sm font-medium w-8 text-center">{field.value}</span>
+                                <button 
+                                  type="button"
+                                  onClick={() => handleAttributeChange('agility', 1)}
+                                  className="w-6 h-6 flex items-center justify-center rounded-full bg-muted hover:bg-muted-foreground/20"
+                                  disabled={remainingPointsCalculated <= 0}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+                            <FormDescription className="text-xs mt-2">
+                              Influences dodge chance and attack speed
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {/* Energy */}
+                    <FormField
+                      control={form.control}
+                      name="energy"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="bg-card border border-border rounded-md p-3">
+                            <div className="flex justify-between items-center">
+                              <FormLabel className="flex items-center text-game-water">
+                                <div className="w-6 h-6 rounded-full bg-game-water/20 flex items-center justify-center mr-2">
+                                  <List className="h-3.5 w-3.5 text-game-water" />
+                                </div>
+                                Energy
+                              </FormLabel>
+                              <div className="flex items-center gap-2">
+                                <button 
+                                  type="button"
+                                  onClick={() => handleAttributeChange('energy', -1)}
+                                  className="w-6 h-6 flex items-center justify-center rounded-full bg-muted hover:bg-muted-foreground/20"
+                                  disabled={watchAttributes.energy <= 1}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </button>
+                                <span className="text-sm font-medium w-8 text-center">{field.value}</span>
+                                <button 
+                                  type="button"
+                                  onClick={() => handleAttributeChange('energy', 1)}
+                                  className="w-6 h-6 flex items-center justify-center rounded-full bg-muted hover:bg-muted-foreground/20"
+                                  disabled={remainingPointsCalculated <= 0}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+                            <FormDescription className="text-xs mt-2">
+                              Boosts magic attack and mana pool
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {/* Resistance */}
+                    <FormField
+                      control={form.control}
+                      name="resistance"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="bg-card border border-border rounded-md p-3">
+                            <div className="flex justify-between items-center">
+                              <FormLabel className="flex items-center text-game-earth">
+                                <div className="w-6 h-6 rounded-full bg-game-earth/20 flex items-center justify-center mr-2">
+                                  <List className="h-3.5 w-3.5 text-game-earth" />
+                                </div>
+                                Resistance
+                              </FormLabel>
+                              <div className="flex items-center gap-2">
+                                <button 
+                                  type="button"
+                                  onClick={() => handleAttributeChange('resistance', -1)}
+                                  className="w-6 h-6 flex items-center justify-center rounded-full bg-muted hover:bg-muted-foreground/20"
+                                  disabled={watchAttributes.resistance <= 1}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </button>
+                                <span className="text-sm font-medium w-8 text-center">{field.value}</span>
+                                <button 
+                                  type="button"
+                                  onClick={() => handleAttributeChange('resistance', 1)}
+                                  className="w-6 h-6 flex items-center justify-center rounded-full bg-muted hover:bg-muted-foreground/20"
+                                  disabled={remainingPointsCalculated <= 0}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+                            <FormDescription className="text-xs mt-2">
+                              Increases defense and health points
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
+              </div>
+              
+              {/* Equipment Slots Info */}
+              <div className="bg-muted/40 p-4 rounded-md">
+                <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <List className="h-4 w-4" />
+                  Equipment Slots (11 Total)
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                  <div>• Helmet</div>
+                  <div>• Chest</div>
+                  <div>• Legs</div>
+                  <div>• Boots</div>
+                  <div>• Gloves</div>
+                  <div>• Backpack</div>
+                  <div>• Ring</div>
+                  <div>• Necklace</div>
+                  <div>• Bracelet</div>
+                  <div>• Main Hand</div>
+                  <div>• Off Hand</div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Some items require both hands and will occupy Main Hand and Off Hand slots.
+                </p>
               </div>
               
               <DialogFooter>
                 <Button 
                   type="submit" 
                   isLoading={isCreating}
-                  disabled={isCreating}
+                  disabled={isCreating || remainingPointsCalculated !== 0}
                 >
+                  <Check className="h-4 w-4 mr-2" />
                   Create Character
                 </Button>
               </DialogFooter>

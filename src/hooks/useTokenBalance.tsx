@@ -24,7 +24,7 @@ export const useTokenBalance = () => {
       // In a real implementation, you would call the Solana API to get the actual balance
       const response = await new Promise(resolve => {
         setTimeout(() => {
-          resolve({ data: { value: { uiAmount: 500 } } });
+          resolve({ data: { value: { uiAmount: 1500 } } });
         }, 1000);
       });
       
