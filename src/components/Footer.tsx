@@ -115,14 +115,14 @@ const Footer = () => {
 // Import these from lucide-react
 import { 
   Twitter, 
-  Discord, 
+  MessageSquare, 
   Globe, 
   Github 
 } from "lucide-react";
 
 const socialLinks = [
   { icon: Twitter, href: "#", label: "Twitter" },
-  { icon: Discord, href: "#", label: "Discord" },
+  { icon: MessageSquare, href: "#", label: "Chat" },
   { icon: Globe, href: "#", label: "Website" },
   { icon: Github, href: "#", label: "GitHub" }
 ];
