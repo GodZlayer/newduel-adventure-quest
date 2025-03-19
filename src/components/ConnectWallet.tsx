@@ -1,16 +1,38 @@
 
 import { useState } from "react";
+import { useWallet } from "@/context/WalletContext";
 import Button from "./ui-custom/Button";
 import Card from "./ui-custom/Card";
-import { Wallet, ChevronRight } from "lucide-react";
+import { Wallet, ChevronRight, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 const ConnectWallet = () => {
-  const [connecting, setConnecting] = useState(false);
+  const { connect, disconnect, walletStatus, publicKey } = useWallet();
+  const [isLoading, setIsLoading] = useState(false);
   
-  const handleConnect = () => {
-    setConnecting(true);
-    // Simulate connection process
-    setTimeout(() => setConnecting(false), 1500);
+  const handleWalletAction = async () => {
+    try {
+      setIsLoading(true);
+      
+      if (walletStatus === 'connected') {
+        await disconnect();
+        toast.success('Wallet desconectada com sucesso!');
+      } else {
+        const result = await connect();
+        if (result) {
+          toast.success('Wallet conectada com sucesso!');
+        } else if (walletStatus === 'not-installed') {
+          toast('Phantom Wallet não encontrada', {
+            description: 'Redirecionando para o site da Phantom...',
+          });
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('Erro ao conectar com a wallet');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -40,15 +62,41 @@ const ConnectWallet = () => {
                 allowing you to own in-game assets and participate in the NewDuel economy.
               </p>
               
+              {publicKey && (
+                <div className="p-3 bg-white/5 rounded-lg border border-white/10 mb-4">
+                  <p className="text-sm text-white/70 mb-1">Connected Account:</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-mono text-sm overflow-hidden overflow-ellipsis">
+                      {publicKey.slice(0, 6)}...{publicKey.slice(-4)}
+                    </p>
+                    <a 
+                      href={`https://solscan.io/account/${publicKey}?cluster=devnet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs flex items-center gap-1 text-blue-300 hover:text-blue-200"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      <span>View on Solscan</span>
+                    </a>
+                  </div>
+                </div>
+              )}
+              
               <div className="flex items-center space-x-4">
                 <Button 
                   className="bg-[#AB9FF2] hover:bg-[#9D8CE4] text-white"
                   size="lg"
-                  isLoading={connecting}
-                  onClick={handleConnect}
+                  isLoading={isLoading}
+                  onClick={handleWalletAction}
                 >
                   <Wallet className="mr-2 h-5 w-5" />
-                  <span>Connect Phantom</span>
+                  <span>
+                    {walletStatus === 'connected' 
+                      ? 'Disconnect Wallet' 
+                      : walletStatus === 'not-installed'
+                      ? 'Install Phantom'
+                      : 'Connect Phantom'}
+                  </span>
                 </Button>
                 <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
                   Learn More

@@ -1,11 +1,13 @@
 
 import { useState, useEffect } from "react";
+import { useWallet } from "@/context/WalletContext";
 import Button from "./ui-custom/Button";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, Menu, X, Wallet } from "lucide-react";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { connect, disconnect, walletStatus, publicKey } = useWallet();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -15,6 +17,14 @@ const Header = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleConnectWallet = async () => {
+    if (walletStatus === 'connected') {
+      await disconnect();
+    } else {
+      await connect();
+    }
+  };
 
   return (
     <header 
@@ -41,6 +51,11 @@ const Header = () => {
         </nav>
         
         <div className="hidden md:flex items-center space-x-4">
+          {publicKey ? (
+            <div className="text-sm bg-game-primary/40 px-2 py-1 rounded border border-game-accent/20">
+              {publicKey.slice(0, 6)}...{publicKey.slice(-4)}
+            </div>
+          ) : null}
           <Button 
             variant="outline" 
             size="sm"
@@ -48,7 +63,12 @@ const Header = () => {
           >
             Login
           </Button>
-          <Button>Connect Wallet</Button>
+          <Button 
+            onClick={handleConnectWallet}
+            isLoading={walletStatus === 'connecting'}
+          >
+            {walletStatus === 'connected' ? 'Disconnect' : 'Connect Wallet'}
+          </Button>
         </div>
         
         <button 
@@ -84,7 +104,13 @@ const Header = () => {
           
           <div className="mt-8 flex flex-col space-y-3">
             <Button variant="outline" className="w-full">Login</Button>
-            <Button className="w-full">Connect Wallet</Button>
+            <Button 
+              className="w-full"
+              onClick={handleConnectWallet}
+              isLoading={walletStatus === 'connecting'}
+            >
+              {walletStatus === 'connected' ? 'Disconnect' : 'Connect Wallet'}
+            </Button>
           </div>
         </div>
       </div>
