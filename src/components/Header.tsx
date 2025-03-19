@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useWallet } from "@/context/WalletContext";
 import Button from "./ui-custom/Button";
@@ -57,13 +56,6 @@ const Header = () => {
             </div>
           ) : null}
           <Button 
-            variant="outline" 
-            size="sm"
-            className="transition-all hover:text-game-accent"
-          >
-            Login
-          </Button>
-          <Button 
             onClick={handleConnectWallet}
             isLoading={walletStatus === 'connecting'}
           >
@@ -103,7 +95,6 @@ const Header = () => {
           </div>
           
           <div className="mt-8 flex flex-col space-y-3">
-            <Button variant="outline" className="w-full">Login</Button>
             <Button 
               className="w-full"
               onClick={handleConnectWallet}

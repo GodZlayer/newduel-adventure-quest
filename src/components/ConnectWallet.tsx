@@ -1,155 +1,92 @@
 
-import { useState } from "react";
 import { useWallet } from "@/context/WalletContext";
+import { useTokenBalance } from "@/hooks/useTokenBalance";
 import Button from "./ui-custom/Button";
-import Card from "./ui-custom/Card";
-import { Wallet, ChevronRight, ExternalLink } from "lucide-react";
-import { toast } from "sonner";
+import CharacterCreation from "./CharacterCreation";
+import { Wallet } from "lucide-react";
 
 const ConnectWallet = () => {
   const { connect, disconnect, walletStatus, publicKey } = useWallet();
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const handleWalletAction = async () => {
-    try {
-      setIsLoading(true);
-      
-      if (walletStatus === 'connected') {
-        await disconnect();
-        toast.success('Wallet desconectada com sucesso!');
-      } else {
-        const result = await connect();
-        if (result) {
-          toast.success('Wallet conectada com sucesso!');
-        } else if (walletStatus === 'not-installed') {
-          toast('Phantom Wallet não encontrada', {
-            description: 'Redirecionando para o site da Phantom...',
-          });
-        }
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error('Erro ao conectar com a wallet');
-    } finally {
-      setIsLoading(false);
+  const { balance, isLoading: isBalanceLoading } = useTokenBalance();
+
+  const handleConnectWallet = async () => {
+    if (walletStatus === 'connected') {
+      await disconnect();
+    } else {
+      await connect();
     }
   };
 
   return (
-    <section className="py-20 bg-gradient-to-br from-game-primary to-game-secondary text-white">
+    <section id="wallet" className="py-24 bg-game-secondary/5">
       <div className="container mx-auto px-4 md:px-6">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-block px-3 py-1 text-sm rounded-full bg-white/10 text-white mb-4">
-            Start Your Adventure
+        <div className="max-w-3xl mx-auto text-center mb-12">
+          <div className="inline-block px-3 py-1 text-sm rounded-full bg-game-accent/10 text-game-accent mb-4">
+            Get Started
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Connect Your Wallet to Play
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Connect Your Wallet
           </h2>
-          <p className="text-white/70 text-lg">
-            Use your Phantom Wallet to create an account, log in, and start your adventure in the world of NewDuel.
+          <p className="text-muted-foreground text-lg">
+            Link your Phantom wallet to start your adventure in NewDuel. Create characters, trade items, and participate in the game economy with NDC tokens.
           </p>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card 
-            variant="glass" 
-            className="md:col-span-2 p-8 transition-transform duration-300 hover:-translate-y-1"
-          >
-            <div className="space-y-6">
-              <h3 className="text-2xl font-bold">Connect Your Wallet</h3>
-              <p className="text-white/70">
-                Securely log in using your Phantom Wallet. Your wallet serves as your unique identity in the game,
-                allowing you to own in-game assets and participate in the NewDuel economy.
-              </p>
-              
-              {publicKey && (
-                <div className="p-3 bg-white/5 rounded-lg border border-white/10 mb-4">
-                  <p className="text-sm text-white/70 mb-1">Connected Account:</p>
-                  <div className="flex items-center gap-2">
-                    <p className="font-mono text-sm overflow-hidden overflow-ellipsis">
-                      {publicKey.slice(0, 6)}...{publicKey.slice(-4)}
-                    </p>
-                    <a 
-                      href={`https://solscan.io/account/${publicKey}?cluster=devnet`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs flex items-center gap-1 text-blue-300 hover:text-blue-200"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      <span>View on Solscan</span>
-                    </a>
+
+        <div className="bg-card rounded-xl border border-border p-8 max-w-2xl mx-auto">
+          <div className="space-y-6">
+            {walletStatus === 'connected' ? (
+              <>
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-game-accent/10 text-game-accent mb-4">
+                    <Wallet className="w-6 h-6" />
                   </div>
+                  <h3 className="text-xl font-semibold mb-2">Wallet Connected</h3>
+                  <p className="text-muted-foreground">
+                    {publicKey?.slice(0, 10)}...{publicKey?.slice(-10)}
+                  </p>
+                  {balance !== null && (
+                    <div className="mt-2 font-medium text-game-token">
+                      {balance} NDC
+                    </div>
+                  )}
                 </div>
-              )}
-              
-              <div className="flex items-center space-x-4">
+                
+                <div className="pt-4 space-y-4">
+                  <CharacterCreation />
+                  
+                  <Button 
+                    onClick={handleConnectWallet} 
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Disconnect Wallet
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-muted mb-4">
+                  <Wallet className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Connect Your Wallet</h3>
+                <p className="text-muted-foreground mb-6">
+                  Connect your Phantom wallet to get started with NDC tokens and create your character.
+                </p>
                 <Button 
-                  className="bg-[#AB9FF2] hover:bg-[#9D8CE4] text-white"
+                  onClick={handleConnectWallet}
+                  isLoading={walletStatus === 'connecting'}
+                  className="w-full"
                   size="lg"
-                  isLoading={isLoading}
-                  onClick={handleWalletAction}
                 >
-                  <Wallet className="mr-2 h-5 w-5" />
-                  <span>
-                    {walletStatus === 'connected' 
-                      ? 'Disconnect Wallet' 
-                      : walletStatus === 'not-installed'
-                      ? 'Install Phantom'
-                      : 'Connect Phantom'}
-                  </span>
-                </Button>
-                <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
-                  Learn More
+                  Connect Phantom Wallet
                 </Button>
               </div>
-            </div>
-          </Card>
-          
-          <div className="space-y-4">
-            {walletFeatures.map((feature, index) => (
-              <WalletFeatureCard key={index} {...feature} />
-            ))}
+            )}
           </div>
         </div>
       </div>
     </section>
   );
 };
-
-const WalletFeatureCard = ({ 
-  title, 
-  description 
-}: { 
-  title: string;
-  description: string;
-}) => (
-  <Card 
-    variant="glass" 
-    className="p-4 cursor-pointer group transition-all duration-300 hover:bg-white/10"
-  >
-    <div className="flex items-center justify-between">
-      <div>
-        <h4 className="font-medium mb-1">{title}</h4>
-        <p className="text-white/60 text-sm">{description}</p>
-      </div>
-      <ChevronRight className="h-5 w-5 text-white/40 group-hover:text-white transition-colors" />
-    </div>
-  </Card>
-);
-
-const walletFeatures = [
-  {
-    title: "Secure Login",
-    description: "No password needed, just connect your wallet"
-  },
-  {
-    title: "Asset Ownership",
-    description: "True ownership of your in-game items and tokens"
-  },
-  {
-    title: "Easy Transfers",
-    description: "Transfer NDC and items between accounts"
-  }
-];
 
 export default ConnectWallet;
