@@ -22,6 +22,7 @@ const Premium = () => {
     return null;
   }
   
+  const isPremium = balance !== null && balance >= PREMIUM_COST;
   const hasSufficientBalance = balance !== null && balance >= PREMIUM_COST;
   
   const handlePurchasePremium = async () => {
@@ -43,7 +44,7 @@ const Premium = () => {
       // Simulate success
       toast({
         title: "Success!",
-        description: "Your account has been upgraded to Premium.",
+        description: "Your wallet has been upgraded to Premium.",
       });
       
       // Refresh token balance
@@ -67,17 +68,23 @@ const Premium = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">Upgrade to Premium</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">Wallet Premium Status</h1>
             <p className="text-lg text-muted-foreground">
               Enhance your gaming experience with additional character slots and premium features.
             </p>
+            {isPremium && (
+              <div className="mt-4 inline-flex items-center gap-2 bg-game-accent/10 text-game-accent px-4 py-2 rounded-full">
+                <Shield className="h-5 w-5" />
+                <span className="font-medium">Your wallet already has Premium status</span>
+              </div>
+            )}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <Card className="border-border">
               <CardHeader>
                 <CardTitle>Free Account</CardTitle>
-                <CardDescription>Current Plan</CardDescription>
+                <CardDescription>Basic Wallet Status</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-3xl font-bold">0 <span className="text-sm font-normal text-muted-foreground">NDC</span></div>
@@ -104,7 +111,7 @@ const Premium = () => {
                 <div className="flex justify-between items-center">
                   <div>
                     <CardTitle className="text-game-accent">Premium Account</CardTitle>
-                    <CardDescription>Upgraded Experience</CardDescription>
+                    <CardDescription>Upgraded Wallet Status</CardDescription>
                   </div>
                   <Shield className="h-6 w-6 text-game-accent" />
                 </div>
@@ -136,20 +143,33 @@ const Premium = () => {
                 </ul>
               </CardContent>
               <CardFooter>
-                {!hasSufficientBalance && (
-                  <div className="w-full mb-3 p-2 bg-amber-50 border border-amber-200 rounded-md flex items-center text-amber-700 text-sm">
-                    <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span>You need {PREMIUM_COST} NDC. Current balance: {balance} NDC</span>
-                  </div>
+                {!isPremium && (
+                  <>
+                    {!hasSufficientBalance && (
+                      <div className="w-full mb-3 p-2 bg-amber-50 border border-amber-200 rounded-md flex items-center text-amber-700 text-sm">
+                        <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <span>You need {PREMIUM_COST} NDC. Current balance: {balance} NDC</span>
+                      </div>
+                    )}
+                    <Button 
+                      className="w-full"
+                      disabled={!hasSufficientBalance || isLoading}
+                      isLoading={isLoading}
+                      onClick={handlePurchasePremium}
+                    >
+                      Upgrade Wallet to Premium
+                    </Button>
+                  </>
                 )}
-                <Button 
-                  className="w-full"
-                  disabled={!hasSufficientBalance || isLoading}
-                  isLoading={isLoading}
-                  onClick={handlePurchasePremium}
-                >
-                  Upgrade Now
-                </Button>
+                {isPremium && (
+                  <Button 
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => navigate('/characters')}
+                  >
+                    Back to Characters
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           </div>

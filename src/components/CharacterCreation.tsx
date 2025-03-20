@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { useWallet } from '@/context/WalletContext';
-import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { toast } from '@/components/ui/use-toast';
 import { 
   Dialog,
@@ -18,18 +17,15 @@ import { useForm } from 'react-hook-form';
 import { Check } from "lucide-react";
 
 // Import component parts
-import { characterSchema, CharacterFormValues, FOUNDER_WALLET } from './character/types';
+import { characterSchema, CharacterFormValues } from './character/types';
 import BasicInfoForm from './character/BasicInfoForm';
-import AccountTypeSelection from './character/AccountTypeSelection';
 import AttributesSection from './character/AttributesSection';
 import EquipmentSlots from './character/EquipmentSlots';
 
 const CharacterCreation = () => {
   const [open, setOpen] = useState(false);
-  const { walletStatus, publicKey } = useWallet();
-  const { balance, isLoading: isBalanceLoading } = useTokenBalance();
+  const { walletStatus } = useWallet();
   const [isCreating, setIsCreating] = useState(false);
-  const [selectedAccountType, setSelectedAccountType] = useState('Free');
   const [remainingPoints, setRemainingPoints] = useState(26);
 
   const form = useForm<CharacterFormValues>({
@@ -37,7 +33,6 @@ const CharacterCreation = () => {
     defaultValues: {
       name: '',
       bio: '',
-      accountType: 'Free',
       strength: 1,
       agility: 1,
       energy: 1,
@@ -79,13 +74,8 @@ const CharacterCreation = () => {
     setRemainingPoints(remainingPointsCalculated - change);
   };
 
-  const handleAccountTypeChange = (type: string) => {
-    setSelectedAccountType(type);
-    form.setValue('accountType', type as CharacterFormValues['accountType']);
-  };
-
   const onSubmit = async (data: CharacterFormValues) => {
-    if (!publicKey || walletStatus !== 'connected') {
+    if (walletStatus !== 'connected') {
       toast({
         title: "Connect Wallet",
         description: "Please connect your wallet to create a character.",
@@ -100,28 +90,6 @@ const CharacterCreation = () => {
       toast({
         title: "Invalid Attributes",
         description: "Please distribute all available attribute points.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Additional verification for Premium account
-    if (data.accountType === 'Premium') {
-      if (balance !== null && balance < 1000) {
-        toast({
-          title: "Insufficient NDC Balance",
-          description: "You need 1000 NDC to create a Premium account.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    // Verification for restricted accounts
-    if ((data.accountType === 'GameMaster' || data.accountType === 'Admin') && publicKey !== FOUNDER_WALLET) {
-      toast({
-        title: "Unauthorized",
-        description: "Only the founder wallet can create this account type.",
         variant: "destructive",
       });
       return;
@@ -157,7 +125,7 @@ const CharacterCreation = () => {
     <div className="w-full">
       <Button 
         onClick={() => setOpen(true)}
-        disabled={walletStatus !== 'connected' || isBalanceLoading}
+        disabled={walletStatus !== 'connected'}
         className="w-full"
         size="lg"
       >
@@ -170,26 +138,14 @@ const CharacterCreation = () => {
             <DialogTitle>Create your Character</DialogTitle>
             <DialogDescription>
               Create your character and start your adventure in the world of NewDuel.
-              {balance !== null && (
-                <div className="mt-2">
-                  Your NDC Balance: <span className="font-semibold text-game-accent">{balance} NDC</span>
-                </div>
-              )}
             </DialogDescription>
           </DialogHeader>
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
                 {/* Character basic info */}
                 <BasicInfoForm control={form.control} />
-                
-                {/* Account Type Selection */}
-                <AccountTypeSelection 
-                  selectedAccountType={selectedAccountType}
-                  onChange={handleAccountTypeChange}
-                  balance={balance}
-                />
               </div>
               
               {/* Attributes Section */}

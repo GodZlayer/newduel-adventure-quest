@@ -6,7 +6,6 @@ import type { LucideIcon } from "lucide-react";
 export const characterSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters').max(20, 'Name must be less than 20 characters'),
   bio: z.string().max(200, 'Bio must be less than 200 characters').optional(),
-  accountType: z.enum(['Free', 'Premium', 'GameMaster', 'Admin']),
   strength: z.number().min(1).max(99),
   agility: z.number().min(1).max(99),
   energy: z.number().min(1).max(99),

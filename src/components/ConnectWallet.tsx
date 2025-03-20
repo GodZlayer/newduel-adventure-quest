@@ -3,7 +3,7 @@ import { useWallet } from "@/context/WalletContext";
 import { useTokenBalance } from "@/hooks/useTokenBalance";
 import Button from "./ui-custom/Button";
 import CharacterCreation from "./CharacterCreation";
-import { Wallet } from "lucide-react";
+import { Wallet, Shield } from "lucide-react";
 
 const ConnectWallet = () => {
   const { connect, disconnect, walletStatus, publicKey } = useWallet();
@@ -16,6 +16,16 @@ const ConnectWallet = () => {
       await connect();
     }
   };
+  
+  // Get account type based on balance (for this demo)
+  const getAccountType = () => {
+    if (!balance) return 'Free';
+    if (balance >= 1000) return 'Premium';
+    return 'Free';
+  };
+
+  const accountType = getAccountType();
+  const isPremium = accountType === 'Premium';
 
   return (
     <section id="wallet" className="py-24 bg-game-secondary/5">
@@ -47,6 +57,12 @@ const ConnectWallet = () => {
                   {balance !== null && (
                     <div className="mt-2 font-medium text-game-token">
                       {balance} NDC
+                    </div>
+                  )}
+                  {isPremium && (
+                    <div className="mt-2 inline-flex items-center gap-1 bg-game-accent/10 text-game-accent px-3 py-1 rounded-full text-sm">
+                      <Shield className="h-3 w-3" />
+                      <span>Premium Wallet</span>
                     </div>
                   )}
                 </div>
