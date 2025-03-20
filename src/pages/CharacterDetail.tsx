@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { useEffect, useState } from "react";
@@ -226,13 +225,14 @@ const CharacterDetail = () => {
               <h2 className="text-xl font-semibold mb-4">Skills</h2>
               <div className="space-y-4">
                 {character.skills.map((skill: any) => {
-                  const elementColor = elementColorMap[skill.element] || 'gray-400';
+                  const skillElementColor = elementColorMap[skill.element] || 'gray-400';
+                  const colorBase = typeof skillElementColor === 'string' ? skillElementColor.split('-')[0] : 'game';
                   return (
                     <div key={skill.id} className="flex items-center justify-between p-3 border rounded-md">
                       <div>
                         <h3 className="font-medium">{skill.name}</h3>
                         <div className="flex items-center text-sm">
-                          <span className={`text-${elementColor && typeof elementColor === 'string' ? elementColor.split('-')[0] : 'game-accent'}`}>
+                          <span className={`text-${colorBase}-${skillElementColor.includes('-') ? skillElementColor.split('-')[1] : 'accent'}`}>
                             {skill.element.charAt(0).toUpperCase() + skill.element.slice(1)}
                           </span>
                           <span className="mx-2">•</span>
