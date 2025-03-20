@@ -1,7 +1,8 @@
 
 import React from "react";
-import { Shield, Sword, Zap } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import CharacterAttributes from "./CharacterAttributes";
+import CharacterStatusBars from "./CharacterStatusBars";
 
 interface CharacterSummaryProps {
   character: {
@@ -28,9 +29,6 @@ interface CharacterSummaryProps {
 const CharacterSummary: React.FC<CharacterSummaryProps> = ({ character, elementColorMap }) => {
   // Calculate progress percentages
   const expProgress = Math.floor((character.experience / character.nextLevelExp) * 100);
-  const healthProgress = Math.floor((character.health / character.maxHealth) * 100);
-  const manaProgress = Math.floor((character.mana / character.maxMana) * 100);
-  const staminaProgress = Math.floor((character.stamina / character.maxStamina) * 100);
   
   // Get element color
   const elementColor = elementColorMap[character.element] || 'gray-400';
@@ -53,58 +51,21 @@ const CharacterSummary: React.FC<CharacterSummaryProps> = ({ character, elementC
           <Progress value={expProgress} className="h-2" />
         </div>
         
-        <div className="grid grid-cols-3 gap-2 text-sm">
-          <div className="text-center p-2 bg-game-fire/10 rounded">
-            <p className="text-xs text-muted-foreground">STR</p>
-            <p className="font-semibold text-game-fire">{character.strength}</p>
-          </div>
-          <div className="text-center p-2 bg-game-air/10 rounded">
-            <p className="text-xs text-muted-foreground">AGI</p>
-            <p className="font-semibold text-game-air">{character.agility}</p>
-          </div>
-          <div className="text-center p-2 bg-game-water/10 rounded">
-            <p className="text-xs text-muted-foreground">ENE</p>
-            <p className="font-semibold text-game-water">{character.energy}</p>
-          </div>
-        </div>
+        <CharacterAttributes 
+          strength={character.strength}
+          agility={character.agility}
+          energy={character.energy}
+          resistance={character.resistance}
+        />
         
-        <div className="text-center p-2 bg-game-earth/10 rounded">
-          <p className="text-xs text-muted-foreground">RES</p>
-          <p className="font-semibold text-game-earth">{character.resistance}</p>
-        </div>
-        
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="flex items-center">
-              <Shield className="h-3 w-3 mr-1 text-red-500" />
-              Health
-            </span>
-            <span>{character.health} / {character.maxHealth}</span>
-          </div>
-          <Progress value={healthProgress} className="h-2 bg-gray-200" indicatorClassName="bg-red-500" />
-        </div>
-        
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="flex items-center">
-              <Zap className="h-3 w-3 mr-1 text-blue-500" />
-              Mana
-            </span>
-            <span>{character.mana} / {character.maxMana}</span>
-          </div>
-          <Progress value={manaProgress} className="h-2 bg-gray-200" indicatorClassName="bg-blue-500" />
-        </div>
-        
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="flex items-center">
-              <Sword className="h-3 w-3 mr-1 text-yellow-500" />
-              Stamina
-            </span>
-            <span>{character.stamina} / {character.maxStamina}</span>
-          </div>
-          <Progress value={staminaProgress} className="h-2 bg-gray-200" indicatorClassName="bg-yellow-500" />
-        </div>
+        <CharacterStatusBars 
+          health={character.health}
+          maxHealth={character.maxHealth}
+          mana={character.mana}
+          maxMana={character.maxMana}
+          stamina={character.stamina}
+          maxStamina={character.maxStamina}
+        />
       </div>
     </div>
   );
