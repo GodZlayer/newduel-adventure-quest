@@ -37,27 +37,31 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row gap-4 mt-8">
             {walletStatus === 'connected' ? (
               <>
-                <Button size="lg" className="group" asChild>
-                  <Link to="/characters">
+                <Link to="/characters">
+                  <Button size="lg" className="group">
                     <span>Manage Characters</span>
                     <ArrowRight className="ml-2 h-4 w-4 transform transition-transform group-hover:translate-x-1" />
-                  </Link>
-                </Button>
-                <Button variant="outline" size="lg" asChild>
-                  <Link to="/premium">Premium Benefits</Link>
-                </Button>
+                  </Button>
+                </Link>
+                <Link to="/premium">
+                  <Button variant="outline" size="lg">
+                    Premium Benefits
+                  </Button>
+                </Link>
               </>
             ) : (
               <>
-                <Button size="lg" className="group" asChild>
-                  <Link to="/connect">
+                <Link to="/connect">
+                  <Button size="lg" className="group">
                     <span>Connect Wallet</span>
                     <ArrowRight className="ml-2 h-4 w-4 transform transition-transform group-hover:translate-x-1" />
-                  </Link>
-                </Button>
-                <Button variant="outline" size="lg">
-                  <a href="#about">Learn More</a>
-                </Button>
+                  </Button>
+                </Link>
+                <a href="#about">
+                  <Button variant="outline" size="lg">
+                    Learn More
+                  </Button>
+                </a>
               </>
             )}
           </div>
