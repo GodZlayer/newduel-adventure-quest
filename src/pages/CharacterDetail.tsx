@@ -11,7 +11,7 @@ import { useCharacter, elementColorMap } from "@/hooks/useCharacter";
 
 const CharacterDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { character, loading } = useCharacter(id);
+  const { data: character, isLoading: loading, isError } = useCharacter(id);
 
   if (loading) {
     return (
@@ -21,7 +21,7 @@ const CharacterDetail = () => {
     );
   }
 
-  if (!character) {
+  if (isError || !character) {
     return (
       <MainLayout>
         <CharacterNotFound />
@@ -36,13 +36,13 @@ const CharacterDetail = () => {
           {/* Character Summary & Equipment Column */}
           <div className="lg:col-span-1 space-y-6">
             <CharacterSummary character={character} elementColorMap={elementColorMap} />
-            <EquipmentSection equipment={character.equipment} />
+            <EquipmentSection equipment={character.equipment || []} />
           </div>
           
           {/* Skills and Inventory Column */}
           <div className="lg:col-span-2 space-y-6">
-            <SkillsSection skills={character.skills} elementColorMap={elementColorMap} />
-            <InventorySection inventory={character.inventory} />
+            <SkillsSection skills={character.skills || []} elementColorMap={elementColorMap} />
+            <InventorySection inventory={character.inventory || []} />
           </div>
         </div>
       </div>

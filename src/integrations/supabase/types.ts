@@ -9,7 +9,219 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      account_types: {
+        Row: {
+          character_slots: number
+          created_at: string
+          id: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          character_slots?: number
+          created_at?: string
+          id?: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          character_slots?: number
+          created_at?: string
+          id?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      character_equipment: {
+        Row: {
+          character_id: string
+          created_at: string
+          id: string
+          name: string
+          rarity: string
+          slot: string
+          stats: Json
+        }
+        Insert: {
+          character_id: string
+          created_at?: string
+          id?: string
+          name: string
+          rarity: string
+          slot: string
+          stats?: Json
+        }
+        Update: {
+          character_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          rarity?: string
+          slot?: string
+          stats?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_equipment_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_inventory: {
+        Row: {
+          character_id: string
+          created_at: string
+          effect: string | null
+          id: string
+          item_id: string | null
+          name: string
+          quantity: number
+        }
+        Insert: {
+          character_id: string
+          created_at?: string
+          effect?: string | null
+          id?: string
+          item_id?: string | null
+          name: string
+          quantity?: number
+        }
+        Update: {
+          character_id?: string
+          created_at?: string
+          effect?: string | null
+          id?: string
+          item_id?: string | null
+          name?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_inventory_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_skills: {
+        Row: {
+          character_id: string
+          cooldown: number
+          created_at: string
+          damage: number
+          element: string
+          id: string
+          name: string
+        }
+        Insert: {
+          character_id: string
+          cooldown: number
+          created_at?: string
+          damage: number
+          element: string
+          id?: string
+          name: string
+        }
+        Update: {
+          character_id?: string
+          cooldown?: number
+          created_at?: string
+          damage?: number
+          element?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_skills_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      characters: {
+        Row: {
+          agility: number
+          bio: string | null
+          class: string
+          created_at: string
+          element: string
+          energy: number
+          experience: number
+          health: number
+          id: string
+          level: number
+          mana: number
+          max_health: number
+          max_mana: number
+          max_stamina: number
+          name: string
+          next_level_exp: number
+          resistance: number
+          stamina: number
+          strength: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agility?: number
+          bio?: string | null
+          class?: string
+          created_at?: string
+          element?: string
+          energy?: number
+          experience?: number
+          health?: number
+          id?: string
+          level?: number
+          mana?: number
+          max_health?: number
+          max_mana?: number
+          max_stamina?: number
+          name: string
+          next_level_exp?: number
+          resistance?: number
+          stamina?: number
+          strength?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agility?: number
+          bio?: string | null
+          class?: string
+          created_at?: string
+          element?: string
+          energy?: number
+          experience?: number
+          health?: number
+          id?: string
+          level?: number
+          mana?: number
+          max_health?: number
+          max_mana?: number
+          max_stamina?: number
+          name?: string
+          next_level_exp?: number
+          resistance?: number
+          stamina?: number
+          strength?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
