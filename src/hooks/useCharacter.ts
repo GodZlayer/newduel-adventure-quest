@@ -1,5 +1,4 @@
 
-import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Character, Skill, Equipment, InventoryItem } from '@/types/database';
@@ -17,12 +16,8 @@ export const elementColorMap: Record<string, string> = {
 };
 
 export const useCharacter = (characterId: string | undefined) => {
-  const [character, setCharacter] = useState<Character | null>(null);
-  const [loading, setLoading] = useState(true);
-
   const fetchCharacter = async (): Promise<Character | null> => {
     if (!characterId) {
-      setLoading(false);
       return null;
     }
 
@@ -36,7 +31,6 @@ export const useCharacter = (characterId: string | undefined) => {
 
       if (characterError || !characterData) {
         console.error('Error fetching character:', characterError);
-        setLoading(false);
         return null;
       }
 
@@ -70,20 +64,23 @@ export const useCharacter = (characterId: string | undefined) => {
         console.error('Error fetching inventory:', inventoryError);
       }
 
+      // Convert equipment stats from Json to Record<string, any>
+      const typedEquipment = equipment?.map(item => ({
+        ...item,
+        stats: item.stats as unknown as Record<string, any>
+      })) || [];
+
       // Combine all data
       const fullCharacter: Character = {
         ...characterData,
         skills: skills || [],
-        equipment: equipment || [],
+        equipment: typedEquipment,
         inventory: inventory || []
       };
 
-      setCharacter(fullCharacter);
-      setLoading(false);
       return fullCharacter;
     } catch (error) {
       console.error('Unexpected error:', error);
-      setLoading(false);
       return null;
     }
   };
@@ -91,14 +88,6 @@ export const useCharacter = (characterId: string | undefined) => {
   return useQuery({
     queryKey: ['character', characterId],
     queryFn: fetchCharacter,
-    enabled: !!characterId,
-    onSuccess: (data) => {
-      setCharacter(data);
-      setLoading(false);
-    },
-    onError: (error) => {
-      console.error('Error fetching character:', error);
-      setLoading(false);
-    }
+    enabled: !!characterId
   });
 };
